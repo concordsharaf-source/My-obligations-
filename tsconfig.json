@@ -1,0 +1,4 @@
+{
+  "//": "Root config used by editors. CLI type-checking runs each project explicitly (see package.json `typecheck`).",
+  "extends": "./tsconfig.app.json"
+}

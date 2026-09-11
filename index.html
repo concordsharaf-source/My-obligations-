@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="description"
+      content="التزاماتي — تطبيق شخصي لإدارة الالتزامات والديون والأقساط والفواتير والمواعيد والميزانية. يعمل بدون إنترنت."
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="التزاماتي" />
+    <meta name="application-name" content="التزاماتي" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <title>التزاماتي — لا تنسَ ما عليك... ولا ما لك</title>
+    <style>
+      /* Critical inline styles: prevents a blank/white flash before the bundle loads.
+         No external resources are referenced here so it also works offline. */
+      :root {
+        color-scheme: light dark;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f1f5f9;
+        font-family: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, system-ui,
+          -apple-system, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #0b1220;
+        }
+        #boot-screen {
+          color: #e2e8f0 !important;
+        }
+        #boot-logo {
+          background: linear-gradient(140deg, #14b8a6, #0f766e) !important;
+        }
+      }
+      #boot-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        color: #0f172a;
+        z-index: 9999;
+        background: inherit;
+      }
+      #boot-logo {
+        width: 84px;
+        height: 84px;
+        border-radius: 24px;
+        background: linear-gradient(140deg, #0d9488, #0f766e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 30px rgba(15, 118, 110, 0.35);
+        animation: boot-pulse 1.4s ease-in-out infinite;
+      }
+      #boot-logo svg {
+        width: 46px;
+        height: 46px;
+      }
+      #boot-title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+      #boot-sub {
+        font-size: 13px;
+        opacity: 0.65;
+      }
+      @keyframes boot-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(0.94);
+          opacity: 0.85;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot-screen">
+        <div id="boot-logo">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4.5 12.5 9.5 17.5 19.5 6.5"
+              stroke="#ffffff"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+        <div id="boot-title">التزاماتي</div>
+        <div id="boot-sub">لا تنسَ ما عليك... ولا ما لك</div>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding: 24px; text-align: center; font-family: sans-serif">
+        يحتاج تطبيق «التزاماتي» إلى تفعيل JavaScript للعمل.
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
