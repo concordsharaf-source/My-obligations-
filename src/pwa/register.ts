@@ -24,12 +24,14 @@ export function setupPWA(): void {
     },
   })
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    useUIStore.getState().setInstallPrompt(e as BeforeInstallPromptEvent)
+  // The install gatekeeper (public/gatekeeper/app.js) owns `beforeinstallprompt`
+  // and re-broadcasts it; we mirror it into the store for the in-app banner.
+  window.addEventListener('pwa:installprompt', (e) => {
+    const detail = (e as CustomEvent).detail as BeforeInstallPromptEvent
+    useUIStore.getState().setInstallPrompt(detail)
   })
 
-  window.addEventListener('appinstalled', () => {
+  window.addEventListener('pwa:installed', () => {
     useUIStore.getState().setInstallPrompt(null)
     showToast('تم تثبيت التطبيق بنجاح 🎉', 'success')
   })

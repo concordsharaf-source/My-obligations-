@@ -25,7 +25,7 @@
 
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["vite/client", "vite-plugin-pwa/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client", "node"],
 
     "baseUrl": ".",
     "paths": {

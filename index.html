@@ -22,6 +22,89 @@
     <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>التزاماتي — لا تنسَ ما عليك... ولا ما لك</title>
+
+    <!-- ==========================================================
+         PWA Install Gatekeeper — critical pre-paint state CSS.
+         Decorative styling lives in ./gatekeeper/style.css
+         (injected by gatekeeper/app.js, precached by the SW).
+         ========================================================== -->
+    <style>
+      #install-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        place-items: center;
+        background: #eef2f6;
+      }
+      @media (prefers-color-scheme: dark) {
+        #install-screen {
+          background: #0b1220;
+        }
+      }
+      html[data-mode='browser']:not([data-gate='dismissed']) #install-screen {
+        display: grid;
+      }
+      html[data-mode='browser']:not([data-gate='dismissed']) #app-content {
+        display: none !important;
+      }
+      #install-screen[data-ui='done'] {
+        display: none !important;
+      }
+      #install-screen [data-gk-panel] {
+        display: none;
+      }
+      #install-screen[data-ui='loading'] [data-gk-panel='loading'],
+      #install-screen[data-ui='prompt'] [data-gk-panel='prompt'],
+      #install-screen[data-ui='ios'] [data-gk-panel='ios'],
+      #install-screen[data-ui='manual'] [data-gk-panel='manual'] {
+        display: block;
+      }
+      /* minimal usable layout before style.css arrives */
+      .gk-card {
+        max-width: 420px;
+        margin: auto;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 26px 18px 18px;
+        text-align: center;
+        color: #0f172a;
+        font-family: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, system-ui,
+          sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        .gk-card {
+          background: #131c31;
+          border-color: #253352;
+          color: #e6edf7;
+        }
+      }
+    </style>
+
+    <!-- Earliest possible capture of beforeinstallprompt + pre-paint mode flag -->
+    <script>
+      ;(function () {
+        try {
+          window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault()
+            window.__gkDeferred = e
+          })
+          var standalone =
+            (window.matchMedia &&
+              (window.matchMedia('(display-mode: standalone)').matches ||
+                window.matchMedia('(display-mode: window-controls-overlay)').matches)) ||
+            window.navigator.standalone === true
+          document.documentElement.setAttribute('data-mode', standalone ? 'standalone' : 'browser')
+          if (window.sessionStorage.getItem('my-obligations:gate') === 'dismissed') {
+            document.documentElement.setAttribute('data-gate', 'dismissed')
+          }
+        } catch (e) {
+          /* never block the app on gatekeeper errors */
+        }
+      })()
+    </script>
+
     <style>
       /* Critical inline styles: prevents a blank/white flash before the bundle loads.
          No external resources are referenced here so it also works offline. */
@@ -98,21 +181,132 @@
     </style>
   </head>
   <body>
-    <div id="root">
-      <div id="boot-screen">
-        <div id="boot-logo">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <!-- ================= PWA INSTALL GATEKEEPER SCREEN ================= -->
+    <div id="install-screen" data-ui="loading" role="dialog" aria-modal="true" aria-labelledby="gk-title">
+      <div class="gk-card">
+        <div class="gk-logo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="16" y="12" width="32" height="34" rx="5" fill="#ffffff" />
+            <rect x="20" y="18" width="18" height="3.6" rx="1.8" fill="#9ff0e4" />
+            <rect x="20" y="25" width="14" height="3.6" rx="1.8" fill="#c9f7ef" />
+            <rect x="20" y="32" width="10" height="3.6" rx="1.8" fill="#c9f7ef" />
             <path
-              d="M4.5 12.5 9.5 17.5 19.5 6.5"
+              d="M24 44.5 29 49.5 40 38"
               stroke="#ffffff"
+              stroke-width="0"
+            />
+            <circle cx="42" cy="46" r="10.5" fill="#ffffff" />
+            <circle cx="42" cy="46" r="8.6" fill="#0d9488" />
+            <path
+              d="M37.6 46.2l3.1 3.2 6-6.6"
+              stroke="#fff"
               stroke-width="2.6"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
           </svg>
         </div>
-        <div id="boot-title">التزاماتي</div>
-        <div id="boot-sub">لا تنسَ ما عليك... ولا ما لك</div>
+        <h1 id="gk-title" style="margin: 0; font-size: 24px; font-weight: 800">التزاماتي</h1>
+        <p class="gk-tag" style="margin: 4px 0 0; font-size: 12px; opacity: 0.65">
+          لا تنسَ ما عليك... ولا ما لك
+        </p>
+        <p class="gk-note" style="margin: 12px auto 0; max-width: 300px; font-size: 12.5px; line-height: 1.9; opacity: 0.75">
+          ثبّت التطبيق ليعمل كتطبيق مستقل على جهازك: بدون إنترنت، بتنبيهات حقيقية، وبياناتك تبقى عندك.
+        </p>
+
+        <div data-gk-panel="loading" style="margin-top: 18px; font-size: 12.5px; opacity: 0.75">
+          <span class="gk-spinner"></span>
+          جارٍ التحقق من دعم التثبيت…
+        </div>
+
+        <div data-gk-panel="prompt" style="margin-top: 18px">
+          <button id="gk-install-button" type="button">تثبيت التطبيق الآن</button>
+          <p class="gk-hint" style="margin: 10px 0 0; font-size: 11px; opacity: 0.7">
+            سيُضاف «التزاماتي» إلى شاشتك الرئيسية ويعمل بدون نافذة متصفح.
+          </p>
+        </div>
+
+        <div data-gk-panel="ios" style="margin-top: 18px">
+          <ol class="gk-steps" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: start">
+            <li>
+              <span class="gk-step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <path d="M16 6l-4-4-4 4M12 2v13" />
+                </svg>
+              </span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">
+                الخطوة 1: اضغط أيقونة <b>المشاركة</b> في شريط أدوات Safari.
+              </span>
+            </li>
+            <li>
+              <span class="gk-step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                  <path d="M12 8v8M8 12h8" />
+                </svg>
+              </span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">
+                الخطوة 2: اختر <b>«Add to Home Screen» / إضافة إلى الشاشة الرئيسية</b>.
+              </span>
+            </li>
+            <li>
+              <span class="gk-step-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m4.5 12.5 5 5 10-11" />
+                </svg>
+              </span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">
+                الخطوة 3: اضغط <b>«إضافة»</b> ثم شغّل التطبيق من الشاشة الرئيسية.
+              </span>
+            </li>
+          </ol>
+        </div>
+
+        <div data-gk-panel="manual" style="margin-top: 18px">
+          <ol class="gk-steps" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; text-align: start">
+            <li>
+              <span class="gk-step-num" aria-hidden="true">1</span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">
+                من قائمة المتصفح (⋮ أو ⋯) اختر <b>«تثبيت التطبيق / Install app»</b>.
+              </span>
+            </li>
+            <li>
+              <span class="gk-step-num" aria-hidden="true">2</span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">أو اضغط أيقونة التثبيت في شريط العنوان إن ظهرت.</span>
+            </li>
+            <li>
+              <span class="gk-step-num" aria-hidden="true">3</span>
+              <span style="font-size: 12.5px; font-weight: 600; line-height: 1.8">شغّل التطبيق بعد التثبيت من سطح المكتب أو قائمة التطبيقات.</span>
+            </li>
+          </ol>
+        </div>
+
+        <button id="gk-continue" type="button" class="gk-continue">المتابعة في المتصفح بدون تثبيت</button>
+        <p class="gk-foot" style="margin: 12px 0 0; font-size: 10px; opacity: 0.6">
+          التزاماتي — تطبيق PWA يعمل بدون إنترنت بالكامل
+        </p>
+      </div>
+    </div>
+
+    <!-- ================= MAIN APP ================= -->
+    <div id="app-content">
+      <div id="root">
+        <div id="boot-screen">
+          <div id="boot-logo">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4.5 12.5 9.5 17.5 19.5 6.5"
+                stroke="#ffffff"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <div id="boot-title">التزاماتي</div>
+          <div id="boot-sub">لا تنسَ ما عليك... ولا ما لك</div>
+        </div>
       </div>
     </div>
     <noscript>
@@ -120,6 +314,7 @@
         يحتاج تطبيق «التزاماتي» إلى تفعيل JavaScript للعمل.
       </div>
     </noscript>
+    <script src="./gatekeeper/app.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

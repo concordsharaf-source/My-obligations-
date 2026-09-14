@@ -1,0 +1,207 @@
+/* ============================================================
+   PWA Install Gatekeeper — style.css
+   Visual layer only. The show/hide STATE machine lives in the
+   critical inline CSS inside index.html (flash-free, pre-paint).
+   ============================================================ */
+
+#install-screen {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(20, 184, 166, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(15, 118, 110, 0.16), transparent 60%),
+    var(--gk-bg, #eef2f6);
+  font-family: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+  color: var(--gk-ink, #0f172a);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  #install-screen {
+    --gk-bg: #0b1220;
+    --gk-ink: #e6edf7;
+    --gk-card: #131c31;
+    --gk-border: #253352;
+    --gk-muted: #93a4c3;
+  }
+}
+
+.gk-card {
+  width: min(420px, 100%);
+  background: var(--gk-card, #ffffff);
+  border: 1px solid var(--gk-border, #e2e8f0);
+  border-radius: 28px;
+  padding: 28px 22px 20px;
+  text-align: center;
+  box-shadow: 0 20px 60px -20px rgba(15, 23, 42, 0.35);
+  animation: gk-pop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+@keyframes gk-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gk-logo {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 14px;
+  border-radius: 22px;
+  background: linear-gradient(140deg, #14b8a6, #0f766e);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.35);
+}
+.gk-logo svg {
+  width: 42px;
+  height: 42px;
+}
+
+#gk-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+.gk-tag {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--gk-muted, #64748b);
+}
+.gk-note {
+  margin: 14px auto 0;
+  max-width: 300px;
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--gk-muted, #64748b);
+}
+
+.gk-panel {
+  margin-top: 18px;
+}
+
+#gk-install-button {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  border-radius: 16px;
+  height: 50px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(140deg, #0d9488, #0f766e);
+  box-shadow: 0 10px 24px -8px rgba(13, 148, 136, 0.6);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+#gk-install-button:active {
+  transform: scale(0.97);
+}
+#gk-install-button:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, 0.4);
+  outline-offset: 2px;
+}
+
+.gk-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--gk-muted, #64748b);
+}
+
+.gk-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: start;
+}
+.gk-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: color-mix(in srgb, var(--gk-card, #fff) 92%, #0d9488 8%);
+  border: 1px solid var(--gk-border, #e2e8f0);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.gk-step-num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(13, 148, 136, 0.14);
+  color: #0d9488;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+.gk-step-icon {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(13, 148, 136, 0.14);
+  color: #0d9488;
+  display: grid;
+  place-items: center;
+}
+.gk-step-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.gk-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(13, 148, 136, 0.25);
+  border-top-color: #0d9488;
+  display: inline-block;
+  vertical-align: -4px;
+  margin-left: 8px;
+  animation: gk-spin 0.8s linear infinite;
+}
+@keyframes gk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+#install-screen [data-gk-panel='loading'] {
+  font-size: 12.5px;
+  color: var(--gk-muted, #64748b);
+}
+
+.gk-continue {
+  margin-top: 16px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gk-muted, #64748b);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.gk-continue:hover {
+  color: #0d9488;
+}
+
+.gk-foot {
+  margin-top: 14px;
+  font-size: 10px;
+  color: var(--gk-muted, #64748b);
+  opacity: 0.8;
+}

@@ -95,7 +95,8 @@ export function AppShell(): JSX.Element {
             <Button
               size="sm"
               onClick={() => {
-                void installPrompt.prompt()
+                // the gatekeeper button may have consumed the deferred prompt already
+                Promise.resolve(installPrompt.prompt()).catch(() => undefined)
                 setInstallPrompt(null)
               }}
             >

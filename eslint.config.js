@@ -50,6 +50,17 @@ export default tseslint.config(
     },
   },
   {
+    // classic browser scripts shipped as-is from public/ (PWA install gatekeeper)
+    files: ['public/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'script',
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ['tests/**/*.{ts,tsx}', '**/*.config.{ts,js,mjs}', 'scripts/**/*.{ts,js,mjs}'],
     languageOptions: {
       globals: {

@@ -60,6 +60,17 @@ npm run ci         # lint + typecheck + test + build
 - زر التثبيت يظهر تلقائيًا (`beforeinstallprompt`)، وتنبيه تحديث عند توفر إصدار جديد.
 - **Offline**: إضافة/تعديل/حذف/بحث/تقويم/ديون/دفعات/ميزانية/إحصائيات/تصدير — كلها محلية 100%.
 
+### 🚪 حاجز التثبيت / Install Gatekeeper
+شاشة تثبيت مستقلة بـ HTML/CSS/JS قياسي (بدون أي إطار عمل) في `public/gatekeeper/` + `index.html`:
+
+- **الكشف**: `display-mode: standalone` / `window-controls-overlay` / `navigator.standalone` → يظهر `#app-content` ويختفي `#install-screen`؛ وإلا العكس. القرار يُتخذ **قبل أول رسم** عبر سكربت inline في `<head>` (لا وميض).
+- **أندرويد/سطح المكتب** (Chrome/Edge/Brave): يُلتقط `beforeinstallprompt` مبكرًا (`preventDefault` لإلغاء الشريط المصغّر) ويُربط بزر «تثبيت التطبيق الآن» — وعند القبول أو `appinstalled` يُفتح التطبيق مباشرة.
+- **iOS Safari** (لا يدعم `beforeinstallprompt`): يختفي زر التثبيت وتظهر 3 خطوات: أيقونة المشاركة ← «Add to Home Screen» ← «إضافة» ثم التشغيل من الشاشة الرئيسية. يشمل iPadOS (`MacIntel` + `maxTouchPoints > 1`) ويستثني متصفحات الطرف الثالث على iOS.
+- **متصفحات أخرى / انتهاء المهلة (2.5 ثانية)**: تعليمات تثبيت يدوية من قائمة المتصفح.
+- رابط «المتابعة في المتصفح» يمنع الانحسار (lockout) ويحفظ الاختيار في `sessionStorage`.
+- جسر أحداث `pwa:installprompt` / `pwa:installed` / `pwa:gate-revealed` يربط الحاجز بواجهة React (بانر التثبيت الداخلي) بدون استهلاك مزدوج للحدث.
+- CSS الحالة الحرج inline في `index.html`، والتنسيق البصري (dark mode، RTL، animations) في `public/gatekeeper/style.css` — وكلاهما ضمن precache للـ SW. الاختبارات: `tests/gatekeeper.test.ts` (11 حالة).
+
 ### الخطوط
 خط **IBM Plex Sans Arabic** مُضمّن ومُجزّأ (woff2 ≈ 190KB للأوزان الأربعة) ويعمل offline عبر precache — لا طلبات شبكة خارجية إطلاقًا.
 
@@ -127,7 +138,8 @@ src/
 ├── store/        # zustand stores
 ├── styles/       # Tailwind 4 tokens + print CSS
 └── utils/        # date/money/cn/ids
-tests/            # Vitest suites (engine, budget, payments, backup, search, suggestions, ui smoke)
+public/gatekeeper/# حاجز تثبيت PWA: app.js + style.css (vanilla, تُنشر كما هي)
+tests/            # Vitest suites (engine, budget, payments, backup, search, suggestions, gatekeeper, ui smoke)
 ```
 
 ## 🛡️ الأمان / Security
