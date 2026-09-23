@@ -93,7 +93,8 @@ npm run ci         # lint + typecheck + test + build
 
 1. **محليًا (يعمل الآن):** مجدول تنبيهات داخل التطبيق + Service Worker؛ يُخزن ما أُطلق في IndexedDB لمنع التكرار؛ الملخص الصباحي/المسائي اختياري.
    ملاحظة صادقة: المتصفحات لا توقظ تطبيقًا مغلقًا بدون Push حقيقي.
-2. **Push حقيقي (جاهز معماريًا):** `src/notifications/push.ts` يوفر `subscribe(vapidPublicKey)` وتصدير الاشتراك لخادومك. المفتاح العام يُدخل من الإعدادات وقت التشغيل — **لا أسرار داخل الواجهة أبدًا**. الـ SW يعالج حدث `push` ويعرض الحمولة `{title, body, route}`.
+2. **Push حقيقي (خادم جاهز للنشر):** مجلد `push-server/` يحتوي Cloudflare Worker مجانيًا كاملًا (تسجيل اشتراكات في KV + إرسال مشفّر RFC 8291/8292 + تنظيف الاشتراكات المنتهية + حماية ADMIN_TOKEN للإرسال). دليل النشر خطوة بخطوة في `push-server/README.md`.
+   في التطبيق: **الإعدادات ← Web Push** — الصق المفتاح العام (ولّده بـ `node scripts/generate-vapid.mjs`) ورابط الخادم، اضغط «اشتراك» وسيُرسل الاشتراك للخادم تلقائيًا. الإعدادات تُحفظ في IndexedDB وتُصدَّر مع النسخ الاحتياطي (مفاتيح عامة فقط — **لا أسرار في الواجهة أبدًا**). الـ SW يعالج حدث `push` ويعرض الحمولة `{title, body, route}`.
 
 ## 💾 النسخ الاحتياطي / Backup
 
@@ -157,6 +158,8 @@ src/
 ├── styles/       # Tailwind 4 tokens + print CSS
 └── utils/        # date/money/cn/ids
 public/gatekeeper/# حاجز تثبيت PWA: app.js + style.css (vanilla, تُنشر كما هي)
+push-server/      # خادم Web Push (Cloudflare Worker) — دليل نشر كامل بداخله
+scripts/          # أدوات مساعدة (توليد مفاتيح VAPID، بناء الأيقونات)
 tests/            # Vitest suites (engine, budget, payments, backup, search, suggestions, gatekeeper, ui smoke)
 ```
 

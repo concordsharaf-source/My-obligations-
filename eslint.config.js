@@ -14,6 +14,8 @@ export default tseslint.config(
       'src/pwa/sw.ts',
       'android/**',
       'ios/**',
+      // خادم Push وحدة نشر مستقلة (Workers) بتبعياتها الخاصة
+      'push-server/**',
     ],
   },
   js.configs.recommended,

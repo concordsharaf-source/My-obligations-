@@ -49,3 +49,7 @@ ios/
 tmp/
 .tmp/
 *.tsbuildinfo
+
+# Wrangler (push-server) local secrets & state
+.dev.vars
+.wrangler/

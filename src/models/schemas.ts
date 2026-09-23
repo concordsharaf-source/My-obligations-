@@ -163,6 +163,12 @@ export const settingsSchema = z.object({
   dailyAllowance: z.boolean().default(true),
   grouping: z.boolean().default(true),
   weekStartsOn: z.union([z.literal(0), z.literal(1), z.literal(6)]).default(6),
+  push: z
+    .object({
+      vapidPublicKey: z.string().max(300).default(''),
+      serverUrl: z.string().max(300).default(''),
+    })
+    .default({ vapidPublicKey: '', serverUrl: '' }),
   createdAt: z.string().default(''),
   updatedAt: z.string().default(''),
 })

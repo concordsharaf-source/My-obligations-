@@ -3,7 +3,14 @@ import { useSettingsStore } from '@/store/settings.store'
 import { useUIStore, showToast } from '@/store/ui.store'
 import { lockService } from '@/services/lock.service'
 import { requestPermission, permissionState, showAppNotification } from '@/notifications/notify'
-import { subscribe, unsubscribe, pushSupported, exportSubscriptionForServer } from '@/notifications/push'
+import {
+  subscribe,
+  unsubscribe,
+  pushSupported,
+  exportSubscriptionForServer,
+  sendSubscriptionToServer,
+  type PushSendResult,
+} from '@/notifications/push'
 import { Button, Card, SectionTitle, Switch } from '@/components/ui/primitives'
 import { ConfirmDialog, Sheet } from '@/components/ui/overlays'
 import { Field, Select, TextInput } from '@/components/ui/fields'
@@ -20,7 +27,34 @@ export default function SettingsPage(): JSX.Element {
   const [pin2, setPin2] = useState('')
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [newCurrency, setNewCurrency] = useState('')
-  const [vapid, setVapid] = useState('')
+  const [vapid, setVapid] = useState(settings.push.vapidPublicKey)
+  const [pushServerUrl, setPushServerUrl] = useState(settings.push.serverUrl)
+
+  const persistPush = (): void => {
+    if (vapid !== settings.push.vapidPublicKey || pushServerUrl !== settings.push.serverUrl) {
+      void update({ push: { vapidPublicKey: vapid, serverUrl: pushServerUrl } }, 'حدّث إعدادات Web Push')
+    }
+  }
+
+  const toastForSend = (result: PushSendResult): void => {
+    switch (result) {
+      case 'sent':
+        showToast('تم إرسال الاشتراك إلى خادم الدفع', 'success')
+        break
+      case 'no-url':
+        showToast('أدخل رابط خادم الدفع أولًا', 'warning')
+        break
+      case 'no-sub':
+        showToast('لا يوجد اشتراك بعد — اضغط «اشتراك» أولًا', 'warning')
+        break
+      case 'offline':
+        showToast('الإرسال إلى الخادم يتطلب اتصالًا بالإنترنت', 'warning')
+        break
+      case 'failed':
+        showToast('تعذر الإرسال — تحقق من الرابط ومن أن الخادم يعمل', 'danger')
+        break
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -147,10 +181,23 @@ export default function SettingsPage(): JSX.Element {
         <SectionTitle>Web Push (اختياري — يتطلب خادومًا خارجيًا)</SectionTitle>
         <Card className="flex flex-col gap-2 p-4">
           <p className="text-[11px] leading-5 text-muted">
-            التنبيهات المحلية تعمل بدون أي خادوم. لتفعيل Push الحقيقي في الخلفية تحتاج خادوم إرسال بمفاتيح VAPID عامة — الصق المفتاح العام هنا (لا أسرار في الواجهة أبدًا).
+            التنبيهات المحلية تعمل بدون أي خادوم. لتفعيل Push الحقيقي في الخلفية تحتاج خادوم إرسال بمفاتيح VAPID — الصق المفتاح العام ورابط الخادم هنا (لا أسرار في الواجهة أبدًا). خادم جاهز للنشر المجاني في مجلد <span dir="ltr">push-server/</span> بالمستودع.
           </p>
-          <TextInput dir="ltr" placeholder="VAPID public key (Base64)" value={vapid} onChange={(e) => setVapid(e.target.value.trim())} />
-          <div className="flex gap-2">
+          <TextInput
+            dir="ltr"
+            placeholder="VAPID public key (Base64)"
+            value={vapid}
+            onChange={(e) => setVapid(e.target.value.trim())}
+            onBlur={persistPush}
+          />
+          <TextInput
+            dir="ltr"
+            placeholder="https://your-push-server.example (رابط خادم الدفع — اختياري)"
+            value={pushServerUrl}
+            onChange={(e) => setPushServerUrl(e.target.value.trim())}
+            onBlur={persistPush}
+          />
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               disabled={!pushSupported() || vapid.length < 20}
@@ -160,15 +207,27 @@ export default function SettingsPage(): JSX.Element {
                   showToast('اشتراك Push يتطلب اتصالًا بالإنترنت مرة واحدة فقط', 'warning')
                   return
                 }
+                persistPush()
                 try {
                   const sub = await subscribe(vapid)
-                  showToast(sub ? 'تم إنشاء اشتراك Push — صدّر البيانات لخادومك' : 'تعذر الاشتراك', sub ? 'success' : 'danger')
+                  if (!sub) {
+                    showToast('تعذر الاشتراك', 'danger')
+                    return
+                  }
+                  if (pushServerUrl.trim()) {
+                    toastForSend(await sendSubscriptionToServer(pushServerUrl))
+                  } else {
+                    showToast('تم إنشاء اشتراك Push — صدّر البيانات لخادومك أو أدخل رابط الخادم', 'success')
+                  }
                 } catch {
                   showToast('تعذر الاشتراك — تحقق من الاتصال أو من مفتاح VAPID', 'danger')
                 }
               }}
             >
               اشتراك
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void sendSubscriptionToServer(pushServerUrl).then(toastForSend)}>
+              إرسال الاشتراك للخادم
             </Button>
             <Button
               size="sm"

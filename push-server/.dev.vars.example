@@ -1,0 +1,5 @@
+# انسخ هذا الملف إلى .dev.vars للتطوير المحلي (wrangler dev) — .dev.vars في .gitignore دائمًا
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+ADMIN_TOKEN=
+VAPID_SUBJECT=mailto:you@example.com

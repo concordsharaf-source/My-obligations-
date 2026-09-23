@@ -59,6 +59,30 @@ export function exportSubscriptionForServer(): string | null {
   return localStorage.getItem(SUB_KEY)
 }
 
+export type PushSendResult = 'sent' | 'no-url' | 'no-sub' | 'offline' | 'failed'
+
+/**
+ * إرسال الاشتراك إلى خادم الدفع (اختياري). هذا أحد حالات «الضرورة»
+ * القليلة للشبكة — يُنفَّذ مرة واحدة بعد الاشتراك.
+ */
+export async function sendSubscriptionToServer(serverUrl: string): Promise<PushSendResult> {
+  const url = serverUrl.trim().replace(/\/+$/, '')
+  if (!url) return 'no-url'
+  const json = exportSubscriptionForServer()
+  if (!json) return 'no-sub'
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline'
+  try {
+    const res = await fetch(`${url}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: JSON.parse(json) }),
+    })
+    return res.ok ? 'sent' : 'failed'
+  } catch {
+    return 'failed'
+  }
+}
+
 /** Called by the SW on `push`. Kept here for documentation symmetry. */
 export async function renderPushPayload(payload: { title?: string; body?: string; route?: string }): Promise<void> {
   await showAppNotification({

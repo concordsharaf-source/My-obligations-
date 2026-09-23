@@ -162,6 +162,11 @@ export interface AppSettings {
   grouping: boolean
   /** first day of week: 6 = Saturday, 0 = Sunday, 1 = Monday */
   weekStartsOn: 0 | 1 | 6
+  /** Web Push (اختياري): المفتاح العام ورابط خادم الإرسال — لا أسرار هنا أبدًا */
+  push: {
+    vapidPublicKey: string
+    serverUrl: string
+  }
   createdAt: string
   updatedAt: string
 }

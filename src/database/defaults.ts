@@ -33,6 +33,7 @@ export function buildDefaultSettings(): AppSettings {
     dailyAllowance: true,
     grouping: true,
     weekStartsOn: 6,
+    push: { vapidPublicKey: '', serverUrl: '' },
     createdAt: now,
     updatedAt: now,
   }
