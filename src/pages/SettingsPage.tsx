@@ -155,13 +155,30 @@ export default function SettingsPage(): JSX.Element {
               size="sm"
               disabled={!pushSupported() || vapid.length < 20}
               onClick={async () => {
-                const sub = await subscribe(vapid)
-                showToast(sub ? 'تم إنشاء اشتراك Push — صدّر البيانات لخادومك' : 'تعذر الاشتراك', sub ? 'success' : 'danger')
+                // حالة الضرورة الوحيدة للشبكة: إنشاء اشتراك Push يتطلب اتصالًا مرة واحدة
+                if (!navigator.onLine) {
+                  showToast('اشتراك Push يتطلب اتصالًا بالإنترنت مرة واحدة فقط', 'warning')
+                  return
+                }
+                try {
+                  const sub = await subscribe(vapid)
+                  showToast(sub ? 'تم إنشاء اشتراك Push — صدّر البيانات لخادومك' : 'تعذر الاشتراك', sub ? 'success' : 'danger')
+                } catch {
+                  showToast('تعذر الاشتراك — تحقق من الاتصال أو من مفتاح VAPID', 'danger')
+                }
               }}
             >
               اشتراك
             </Button>
-            <Button size="sm" variant="outline" onClick={() => void unsubscribe().then(() => showToast('تم إلغاء الاشتراك', 'info'))}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                unsubscribe()
+                  .then(() => showToast('تم إلغاء الاشتراك', 'info'))
+                  .catch(() => showToast('تعذر إلغاء الاشتراك', 'danger'))
+              }
+            >
               إلغاء الاشتراك
             </Button>
             <Button

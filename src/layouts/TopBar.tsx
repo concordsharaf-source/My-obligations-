@@ -4,12 +4,14 @@ import { IconButton } from '@/components/ui/primitives'
 import { Icon } from '@/components/ui/Icon'
 import { useUIStore } from '@/store/ui.store'
 import { useNow } from '@/hooks/useNow'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { AR_LOCALE } from '@/utils/date'
 
 export function TopBar({ title, subtitle }: { title: string; subtitle?: string }): JSX.Element {
   const navigate = useNavigate()
   const now = useNow(60_000)
   const overdueBadge = useUIStore((s) => s.overdueBadge)
+  const online = useOnlineStatus()
 
   const dateLabel = new Intl.DateTimeFormat(AR_LOCALE, {
     weekday: 'long',
@@ -30,6 +32,15 @@ export function TopBar({ title, subtitle }: { title: string; subtitle?: string }
           </span>
         </button>
         <div className="flex-1" />
+        {!online && (
+          <span
+            className="no-print flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[9px] font-bold text-muted"
+            title="أنت غير متصل — التطبيق يعمل بالكامل من جهازك"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            بدون إنترنت
+          </span>
+        )}
         <IconButton icon="search" label="بحث" onClick={() => navigate('/search')} />
         <IconButton
           icon="bell"

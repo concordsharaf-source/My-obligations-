@@ -16,8 +16,10 @@ export function setupPWA(): void {
     },
     onRegisteredSW(_url, reg) {
       if (!reg) return
-      // check for updates hourly
-      window.setInterval(() => void reg.update(), 60 * 60 * 1000)
+      // check for updates hourly — silently skip when offline (no unhandled rejections)
+      window.setInterval(() => {
+        reg.update().catch(() => undefined)
+      }, 60 * 60 * 1000)
     },
     onRegisterError(error) {
       console.warn('SW registration failed', error)
