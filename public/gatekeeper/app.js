@@ -20,6 +20,14 @@
   var GRACE_MS = 2500
 
   var html = document.documentElement
+
+  // وصل السكربت ⇒ لا حاجة للحارس الزمني الذي نصّبه index.html
+  window.__gkReady = true
+  if (window.__gkWatchdog) {
+    clearTimeout(window.__gkWatchdog)
+    window.__gkWatchdog = null
+  }
+
   var screenEl = document.getElementById('install-screen')
   var installBtn = document.getElementById('gk-install-button')
   var continueBtn = document.getElementById('gk-continue')
@@ -66,18 +74,31 @@
   }
 
   function reveal(reason) {
-    html.setAttribute('data-gate', 'dismissed')
-    try {
-      window.sessionStorage.setItem(SESSION_KEY, 'dismissed')
-    } catch {
-      /* private mode — ignore */
+    dismiss('dismissed', reason, true)
+  }
+
+  /* فتح بلا تسجيل: من فقد الشبكة يفتح التطبيق فورًا، وإذا عادت الشبكة في زيارة
+     لاحقة تُمنح البوابة فرصتها — فلا نطالب بالإنترنت إلا عند الضرورة. */
+  function revealOffline() {
+    dismiss('offline', 'offline', false)
+  }
+
+  function dismiss(attr, reason, remember) {
+    html.setAttribute('data-gate', attr)
+    if (remember) {
+      try {
+        window.sessionStorage.setItem(SESSION_KEY, 'dismissed')
+      } catch {
+        /* private mode — ignore */
+      }
     }
     setUI('done')
     window.dispatchEvent(new CustomEvent('pwa:gate-revealed', { detail: { reason: reason } }))
   }
 
   function isDismissed() {
-    return html.getAttribute('data-gate') === 'dismissed'
+    var g = html.getAttribute('data-gate')
+    return g === 'dismissed' || g === 'offline'
   }
 
   /* ---------- beforeinstallprompt ---------- */
@@ -115,6 +136,11 @@
     reveal('continue')
   })
 
+  // انقطعت الشبكة ونحن على البوابة ⇒ لا نترك التطبيق معلَّقًا
+  window.addEventListener('offline', function () {
+    if (!isDismissed()) revealOffline()
+  })
+
   window.addEventListener('appinstalled', function () {
     window.dispatchEvent(new CustomEvent('pwa:installed'))
     reveal('installed')
@@ -142,6 +168,10 @@
   }
 
   html.setAttribute('data-mode', 'browser')
+  if (window.navigator.onLine === false) {
+    revealOffline()
+    return
+  }
   if (isDismissed()) return
 
   if (deferred) {

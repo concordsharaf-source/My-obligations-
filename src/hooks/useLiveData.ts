@@ -50,12 +50,17 @@ export interface DataBundle {
 }
 
 export function useDataBundle(): DataBundle {
-  const obligations = useObligations()
-  const payments = usePayments()
-  const persons = usePersons()
-  const categories = useCategories()
-  const incomeSources = useIncomeSources()
-  const incomeEntries = useIncomeEntries()
+  /*
+   * تُستدعى الاستعلامات هنا بلا قيمة ابتدائية (عكس useObligations وغيرها التي
+   * تُرجع [] فورًا): هكذا فقط يعني ready «وصلت البيانات فعلًا من IndexedDB»،
+   * وتعرف الشاشات (خصوصًا نموذج التعديل) ألا ترسم نفسها قبل ذلك.
+   */
+  const obligations = useLiveQuery(() => db.obligations.filter((o) => o.deletedAt === null).toArray(), [])
+  const payments = useLiveQuery(() => db.payments.toArray(), [])
+  const persons = useLiveQuery(() => db.persons.filter((p) => p.deletedAt === null).toArray(), [])
+  const categories = useLiveQuery(() => db.categories.filter((c) => c.deletedAt === null).toArray(), [])
+  const incomeSources = useLiveQuery(() => db.incomeSources.toArray(), [])
+  const incomeEntries = useLiveQuery(() => db.incomeEntries.toArray(), [])
   const ready =
     obligations !== undefined &&
     payments !== undefined &&

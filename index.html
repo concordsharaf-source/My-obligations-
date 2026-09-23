@@ -42,10 +42,11 @@
           background: #0b1220;
         }
       }
-      html[data-mode='browser']:not([data-gate='dismissed']) #install-screen {
+      /* data-gate: dismissed (طلب المستخدم) أو offline (بلا شبكة — لا نسدّ الباب) */
+      html[data-mode='browser']:not([data-gate='dismissed']):not([data-gate='offline']) #install-screen {
         display: grid;
       }
-      html[data-mode='browser']:not([data-gate='dismissed']) #app-content {
+      html[data-mode='browser']:not([data-gate='dismissed']):not([data-gate='offline']) #app-content {
         display: none !important;
       }
       #install-screen[data-ui='done'] {
@@ -86,6 +87,7 @@
     <script>
       ;(function () {
         try {
+          var html = document.documentElement
           window.addEventListener('beforeinstallprompt', function (e) {
             e.preventDefault()
             window.__gkDeferred = e
@@ -95,10 +97,25 @@
               (window.matchMedia('(display-mode: standalone)').matches ||
                 window.matchMedia('(display-mode: window-controls-overlay)').matches)) ||
             window.navigator.standalone === true
-          document.documentElement.setAttribute('data-mode', standalone ? 'standalone' : 'browser')
-          if (window.sessionStorage.getItem('my-obligations:gate') === 'dismissed') {
-            document.documentElement.setAttribute('data-gate', 'dismissed')
+          html.setAttribute('data-mode', standalone ? 'standalone' : 'browser')
+
+          // بلا إنترنت: التطبيق يعمل كاملًا (كل بياناته في IndexedDB على الجهاز)،
+          // والتثبيت نفسه يحتاج شبكة — فلا نطالب بالإنترنت إلا عند الضرورة.
+          if (window.navigator.onLine === false) {
+            html.setAttribute('data-gate', 'offline')
+            return
           }
+          if (window.sessionStorage.getItem('my-obligations:gate') === 'dismissed') {
+            html.setAttribute('data-gate', 'dismissed')
+            return
+          }
+          if (standalone) return
+
+          // حارس زمن: إن لم يصل gatekeeper/app.js (كاش قديم/شبكة ضعيفة/404)
+          // فلا يبقى المستخدم أمام شاشة «جارٍ…» — نكشف التطبيق.
+          window.__gkWatchdog = window.setTimeout(function () {
+            if (!window.__gkReady) html.setAttribute('data-gate', 'dismissed')
+          }, 2500)
         } catch (e) {
           /* never block the app on gatekeeper errors */
         }

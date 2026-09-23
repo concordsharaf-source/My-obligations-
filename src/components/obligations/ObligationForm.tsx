@@ -87,6 +87,33 @@ function presetFor(kind: QuickKind, categories: Category[], currency: string): F
   }
 }
 
+/** حالة النموذج من التزام موجود (تعديل) أو من قالب الإضافة */
+function buildInitialState(
+  existing: Obligation | undefined,
+  kind: QuickKind,
+  categories: Category[],
+  currency: string,
+): FormState {
+  if (!existing) return presetFor(kind, categories, currency)
+  return {
+    title: existing.title,
+    categoryId: existing.categoryId,
+    personId: existing.personId,
+    direction: existing.direction,
+    amount: existing.amount ? String(existing.amount) : '',
+    currency: existing.currency,
+    dueDate: existing.dueDate,
+    dueTime: existing.dueTime ?? '',
+    recurrenceType: existing.recurrence.type,
+    interval: String(existing.recurrence.interval),
+    recurrenceEnd: existing.recurrence.endDate ?? '',
+    priority: existing.priority,
+    notes: existing.notes,
+    reminders: existing.reminders,
+    newPersonName: '',
+  }
+}
+
 export function ObligationForm({
   kind = 'new',
   existing,
@@ -103,28 +130,26 @@ export function ObligationForm({
   const settings = useSettings()
   const navigate = useNavigate()
   const [state, setState] = useState<FormState>(() =>
-    existing
-      ? {
-          title: existing.title,
-          categoryId: existing.categoryId,
-          personId: existing.personId,
-          direction: existing.direction,
-          amount: existing.amount ? String(existing.amount) : '',
-          currency: existing.currency,
-          dueDate: existing.dueDate,
-          dueTime: existing.dueTime ?? '',
-          recurrenceType: existing.recurrence.type,
-          interval: String(existing.recurrence.interval),
-          recurrenceEnd: existing.recurrence.endDate ?? '',
-          priority: existing.priority,
-          notes: existing.notes,
-          reminders: existing.reminders,
-          newPersonName: '',
-        }
-      : presetFor(kind, categories, settings.currency),
+    buildInitialState(existing, kind, categories, settings.currency),
   )
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+
+  /*
+   * إصلاح «التعديل يفتح بخانات فاضية»: بيانات Dexie تصل بعد أول رسم، فقيمة
+   * useState الابتدائية تكون حُسبت و«existing» ما وصلت بعد (نموذج فارغ).
+   * نتتبّع من أي سجل حُمّل النموذج، وإذا تغيّر المصدر (وصل الالتزام، أو انتقل
+   * المستخدم من «جديد» إلى «تعديل») تُعاد تعبئة الخانات — أثناء الرسم نفسه فلا
+   * وميض. الاعتماد على المعرّف وحده (لا updatedAt) حتى لا تضيع كتابات المستخدم
+   * عند وصول تحديث حيّ من مصدر آخر.
+   */
+  const sourceKey = existing ? `edit:${existing.id}` : `new:${kind}`
+  const [loadedKey, setLoadedKey] = useState(sourceKey)
+  if (loadedKey !== sourceKey) {
+    setLoadedKey(sourceKey)
+    setState(buildInitialState(existing, kind, categories, settings.currency))
+    setErrors({})
+  }
 
   const set = (patch: Partial<FormState>): void => setState((s) => ({ ...s, ...patch }))
   const financial = state.direction !== 'none'
@@ -332,6 +357,7 @@ export function ObligationForm({
             <button
               key={r.value}
               type="button"
+              aria-pressed={state.reminders.includes(r.value)}
               onClick={() => toggleReminder(r.value)}
               className={cn(
                 'tap rounded-full border px-2.5 py-1 text-[11px] font-semibold',

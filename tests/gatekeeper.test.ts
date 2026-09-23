@@ -171,4 +171,95 @@ describe('PWA install gatekeeper', () => {
     window.dispatchEvent(new Event('appinstalled'))
     expect(document.documentElement.getAttribute('data-gate')).toBe('dismissed')
   })
+
+})
+
+describe('boot offline / fail-open (لا نطالب بالإنترنت إلا عند الضرورة)', () => {
+  const HTML = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+
+  /** سكربت ما قبل الرسم المضمّن في index.html — كما سيُنفَّذ في المتصفح */
+  function runInlineGate(): void {
+    const m = HTML.match(/Earliest possible capture of beforeinstallprompt[\s\S]*?<script>([\s\S]*?)<\/script>/)
+    expect(m, 'inline pre-paint gate script must exist in index.html').toBeTruthy()
+    vm.runInThisContext((m as RegExpMatchArray)[1] as string, { filename: 'index.html:inline-gate' })
+  }
+
+  function setOnline(value: boolean): void {
+    Object.defineProperty(window.navigator, 'onLine', { value, configurable: true })
+  }
+
+  // كل runGatekeeper() يضيف مستمِعات على window ولا سبيل لإزالتها في jsdom،
+  // فنُصفري حالة window المشتركة قبل كل اختبار حتى لا يتأثر الحارس الزمني.
+  beforeEach(() => {
+    const w = window as unknown as { __gkReady?: boolean; __gkWatchdog?: number | null }
+    delete w.__gkReady
+    w.__gkWatchdog = null
+    setOnline(true)
+  })
+
+  it('contract CSS: حالة offline تُظهر التطبيق ولا تسدّه', () => {
+    expect(HTML).toContain("html[data-mode='browser']:not([data-gate='dismissed']):not([data-gate='offline']) #app-content")
+    expect(HTML).toContain("html[data-mode='browser']:not([data-gate='dismissed']):not([data-gate='offline']) #install-screen")
+  })
+
+  it('بلا شبكة ⇒ التطبيق يُفتح مباشرة (data-gate=offline) وبلا حفظ الاختيار', () => {
+    setOnline(false)
+    runInlineGate()
+    expect(document.documentElement.getAttribute('data-mode')).toBe('browser')
+    expect(document.documentElement.getAttribute('data-gate')).toBe('offline')
+    expect(window.sessionStorage.getItem('my-obligations:gate')).toBeNull()
+  })
+
+  it('مع الشبكة ⇒ البوابة تعمل ولا تُفتح تلقائيًا', () => {
+    setOnline(true)
+    runInlineGate()
+    expect(document.documentElement.getAttribute('data-gate')).toBeNull()
+  })
+
+  it('حارس الزمن: لو لم يصل gatekeeper/app.js خلال 2.5 ثانية يُكشف التطبيق', () => {
+    setOnline(true)
+    runInlineGate()
+    vi.advanceTimersByTime(2600)
+    expect(document.documentElement.getAttribute('data-gate')).toBe('dismissed')
+  })
+
+  it('حارس الزمن لا يعمل إذا كان gatekeeper/app.js جاهزًا', () => {
+    setOnline(true)
+    ;(window as unknown as { __gkReady?: boolean }).__gkReady = true
+    runInlineGate()
+    vi.advanceTimersByTime(2600)
+    expect(document.documentElement.getAttribute('data-gate')).toBeNull()
+    delete (window as unknown as { __gkReady?: boolean }).__gkReady
+  })
+
+  it('gatekeeper/app.js يعلن جاهزيته ويلغي حارس الزمن', () => {
+    const clear = vi.spyOn(window, 'clearTimeout')
+    ;(window as unknown as { __gkWatchdog?: number }).__gkWatchdog = window.setTimeout(() => undefined, 5000)
+    runGatekeeper()
+    expect((window as unknown as { __gkReady?: boolean }).__gkReady).toBe(true)
+    expect(clear).toHaveBeenCalled()
+    expect((window as unknown as { __gkWatchdog?: number | null }).__gkWatchdog).toBeNull()
+  })
+
+  it('انقطعت الشبكة أثناء البوابة ⇒ يُكشف التطبيق ويُبلَّغ السبب', () => {
+    setOnline(true)
+    runGatekeeper()
+    expect(document.documentElement.getAttribute('data-gate')).toBeNull()
+    setOnline(false)
+    const reasons: string[] = []
+    window.addEventListener('pwa:gate-revealed', (e) => reasons.push(String((e as CustomEvent).detail.reason)))
+    window.dispatchEvent(new Event('offline'))
+    expect(document.documentElement.getAttribute('data-gate')).toBe('offline')
+    expect(reasons).toContain('offline')
+    expect(window.sessionStorage.getItem('my-obligations:gate')).toBeNull()
+  })
+
+  it('يقلع بلا شبكة: شاشة التثبيت لا تظهر أبدًا ويُعلن السبب للحدث', () => {
+    setOnline(false)
+    const seen: string[] = []
+    window.addEventListener('pwa:gate-revealed', (e) => seen.push(String((e as CustomEvent).detail.reason)))
+    runGatekeeper()
+    expect(screenEl().getAttribute('data-ui')).toBe('done')
+    expect(seen).toContain('offline')
+  })
 })
