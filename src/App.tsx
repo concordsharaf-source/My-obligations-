@@ -1,6 +1,7 @@
 import { useEffect, type JSX } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/layouts/AppShell'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTheme } from '@/hooks/useTheme'
 import DashboardPage from '@/pages/DashboardPage'
 import CalendarPage from '@/pages/CalendarPage'
@@ -47,7 +48,8 @@ export default function App(): JSX.Element {
   return (
     <HashRouter>
       <TitleSync />
-      <Routes>
+      <ErrorBoundary>
+        <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
@@ -72,7 +74,8 @@ export default function App(): JSX.Element {
           <Route path="/print/:report" element={<PrintPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
-      </Routes>
+        </Routes>
+      </ErrorBoundary>
     </HashRouter>
   )
 }
